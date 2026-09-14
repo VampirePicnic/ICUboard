@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DAUC ICU Board - TV LIVE</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+--bg: #cfc7d6; --surface: #ffffff; --border: #d4dce8;
+--text: #1a2336; --muted: #7a8fa8;
+--icu-accent: #2563eb; --surg-accent: #7c3aed; --drop-accent: #0891b2;
+--cpr: #16a34a; --dnr: #dc2626;
+--shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; padding: 8px 14px; }
+/* ── HEADER ── */
+.header {
+display: flex; justify-content: space-between; align-items: center;
+margin-bottom: 8px; padding-bottom: 7px; border-bottom: 2px solid var(--border);
+}
+.header-left { display: flex; align-items: center; gap: 10px; }
+.logo-img { height: 36px; width: auto; object-fit: contain; }
+.logo-placeholder {
+height: 36px; width: 36px; background: var(--icu-accent); border-radius: 6px;
+display: flex; align-items: center; justify-content: center;
+font-family: 'Syne', sans-serif; font-weight: 800; color: white; font-size: 14px;
+}
+.header-titles { display: flex; flex-direction: column; gap: 0; }
+.header-sub { font-size: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
+.board-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: var(--text); line-height: 1.1; }
+/* ── SECTION HEADERS ── */
+.section-head {
+font-size: 9px; font-weight: 800; margin: 10px 0 3px 0;
+letter-spacing: 1px; text-transform: uppercase; display: flex; align-items: center; gap: 6px;
+}
+.section-head::after { content: ''; flex: 1; height: 1px; background: currentColor; opacity: 0.2; }
+/* ── TABLE ── */
+.board-table { width: 100%; border-collapse: separate; border-spacing: 0 2px; }
+.board-table th {
+font-size: 8px; color: var(--muted); text-transform: uppercase;
+padding: 2px 6px; text-align: left; font-weight: 600; letter-spacing: 0.4px;
+}
+.board-table tr { background: var(--surface); box-shadow: var(--shadow); transition: background 0.15s; }
+.board-table td { padding: 4px 6px; font-size: 11px; vertical-align: middle; line-height: 1.15; }
+/* Section accent bars */
+.icu td:first-child { border-left: 4px solid var(--icu-accent); border-radius: 4px 0 0 4px; }
+.surg td:first-child { border-left: 4px solid var(--surg-accent); border-radius: 4px 0 0 4px; }
+.drop td:first-child { border-left: 4px solid var(--drop-accent); border-radius: 4px 0 0 4px; }
+.patient-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px; }
+.patient-owner { font-size: 8px; color: var(--muted); text-transform: uppercase; }
+.status-pill { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; display: inline-block; }
+.cpr { background: #f0fdf4; color: var(--cpr); border: 1px solid #bbf7d0; }
+.dnr { background: #fef2f2; color: var(--dnr); border: 1px solid #fecaca; }
+/* ── DRAG & DROP ── */
+.board-table tr[draggable="true"] { cursor: grab; }
+.board-table tr[draggable="true"]:active { cursor: grabbing; }
+.board-table tr.dragging { opacity: 0.4; }
+tbody.drag-over { outline: 2px dashed var(--icu-accent); outline-offset: -2px; background: #eff6ff; border-radius: 4px; }
+tbody.drag-over-surg { outline-color: var(--surg-accent); background: #f5f3ff; }
+tbody.drag-over-drop { outline-color: var(--drop-accent); background: #ecfeff; }
+/* ── EMPTY STATE ── */
+.empty-row td { text-align: center; color: var(--muted); font-size: 10px; padding: 8px; font-style: italic; }
+/* ── MODAL ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(3px); display: none; align-items: center; justify-content: center; z-index: 1000; }
+.modal-overlay.open { display: flex; }
+.modal { background: white; padding: 20px; border-radius: 10px; width: 580px; max-width: 95vw; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+.modal h2 { font-family: 'Syne', sans-serif; margin-bottom: 14px; font-size: 16px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.form-group { display: flex; flex-direction: column; gap: 3px; }
+.form-group label { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.3px; }
+input, select, textarea { padding: 7px 9px; border: 1px solid var(--border); border-radius: 5px; font-size: 12px; width: 100%; font-family: 'DM Mono', monospace; color: var(--text); }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--icu-accent); }
+.edit-toggle { cursor: pointer; font-size: 10px; border: 1px solid var(--border); padding: 5px 12px; border-radius: 4px; background: white; font-family: 'DM Mono', monospace; transition: all 0.15s; }
+.edit-toggle.active { background: var(--icu-accent); color: white; border-color: var(--icu-accent); }
+#addBtn { display: none; margin: 10px 0 4px; padding: 7px 14px; background: var(--icu-accent); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-family: 'DM Mono', monospace; }
+</style>
+</head>
+<body>
+<div class="header">
+<div class="header-left">
+<!-- Replace src with your logo path when available -->
+<div class="logo-placeholder" id="logo-wrap">D</div>
+<div class="header-titles">
+<div class="header-sub">Dallas Animal Urgent Care</div>
+<div class="board-title">ICU Board</div>
+</div>
+</div>
+<div style="display:flex; align-items:center; gap:16px;">
+<div class="edit-toggle" id="editToggle" onclick="toggleEditMode()">Admin Mode</div>
+<div id="clock" style="font-size:18px; font-weight:600; font-family:'DM Mono',monospace;">--:--</div>
+</div>
+</div>
+
+<button id="addBtn" onclick="openModal()">+ Add Patient</button>
+
+<!-- ICU -->
+<div class="section-head" style="color:var(--icu-accent)">✚ ICU / Hospital</div>
+<table class="board-table">
+<thead><tr>
+<th style="width:130px">Patient</th><th style="width:48px">Wt</th><th style="width:40px">Sp</th>
+<th style="width:65px">Location</th><th style="width:95px">DVM</th><th style="width:58px">Tech</th>
+<th style="width:120px">Reason</th><th>Rx / Instructions</th>
+<th style="width:60px">Status</th><th style="width:120px">Alerts</th>
+</tr></thead>
+<tbody id="icu-body" class="drop-zone" data-section="icu"></tbody>
+</table>
+
+<!-- SURGERY -->
+<div class="section-head" style="color:var(--surg-accent)">✂ Surgery</div>
+<table class="board-table">
+<thead><tr>
+<th style="width:130px">Patient</th><th style="width:48px">Wt</th><th style="width:40px">Sp</th>
+<th style="width:65px">Location</th><th style="width:95px">DVM</th><th style="width:58px">Tech</th>
+<th style="width:120px">Reason</th><th>Rx / Instructions</th>
+<th style="width:60px">Status</th><th style="width:120px">Alerts</th>
+</tr></thead>
+<tbody id="surg-body" class="drop-zone" data-section="surg"></tbody>
+</table>
+
+<!-- DROP OFFS -->
+<div class="section-head" style="color:var(--drop-accent)">🚗 Drop Offs</div>
+<table class="board-table">
+<thead><tr>
+<th style="width:130px">Patient</th><th style="width:48px">Wt</th><th style="width:40px">Sp</th>
+<th style="width:65px">Location</th><th style="width:95px">DVM</th><th style="width:58px">Tech</th>
+<th style="width:120px">Reason</th><th>Rx / Instructions</th>
+<th style="width:60px">Status</th><th style="width:120px">Alerts</th>
+</tr></thead>
+<tbody id="drop-body" class="drop-zone" data-section="drop"></tbody>
+</table>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+<div class="modal">
+<h2 id="modalTitle">Patient Entry</h2>
+<div class="form-grid">
+<div class="form-group"><label>Pet Name</label><input id="f-name" placeholder="Name"></div>
+<div class="form-group"><label>Owner</label><input id="f-owner" placeholder="Owner"></div>
+<div class="form-group"><label>Weight</label><input id="f-weight" placeholder="e.g. 14.2 kg"></div>
+<div class="form-group"><label>Species</label>
+<select id="f-species"><option value="K9">K9</option><option value="Fel">Fel</option><option value="Other">Other</option></select>
+</div>
+<div class="form-group"><label>Location / Cage</label><input id="f-location" placeholder="e.g. ICU-3"></div>
+<div class="form-group"><label>Section</label>
+<select id="f-section">
+<option value="icu">ICU / Hospital</option>
+<option value="surg">Surgery</option>
+<option value="drop">Drop Off</option>
+</select>
+</div>
+<div class="form-group"><label>DVM – AM</label><input id="f-dvm-am" placeholder="AM Doctor"></div>
+<div class="form-group"><label>DVM – PM</label><input id="f-dvm-pm" placeholder="PM Doctor"></div>
+<div class="form-group"><label>Tech</label><input id="f-tech" placeholder="Tech Name"></div>
+<div class="form-group"><label>CPR Status</label>
+<select id="f-status"><option value="CPR">CPR</option><option value="DNR">DNR</option></select>
+</div>
+<div class="form-group" style="grid-column:1/-1"><label>Reason for Visit</label><input id="f-reason" placeholder="Chief complaint"></div>
+<div class="form-group" style="grid-column:1/-1"><label>Rx / Instructions</label><textarea id="f-rx" rows="2" placeholder="Medications, treatments..."></textarea></div>
+<div class="form-group" style="grid-column:1/-1"><label>Alerts</label><textarea id="f-alert" rows="2" placeholder="Warnings, notes..."></textarea></div>
+</div>
+<div style="margin-top:14px; display:flex; justify-content:space-between; align-items:center;">
+<button onclick="closeModal()" style="border:none; background:none; cursor:pointer; color:var(--muted); font-size:13px;">Cancel</button>
+<div style="display:flex; gap:8px;">
+<button id="delBtn" style="display:none; background:#fee2e2; color:#991b1b; padding:7px 14px; border-radius:5px; border:none; cursor:pointer; font-size:12px;" onclick="deletePatient()">Discharge</button>
+<button style="background:var(--icu-accent); color:white; padding:7px 16px; border-radius:5px; border:none; cursor:pointer; font-size:12px;" onclick="savePatient()">Save</button>
+</div>
+</div>
+</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script>
+// ── FIREBASE ──────────────────────────────────────────────────────────────
+// Same project as the Charge Board — no separate "daucboard" project
+// anymore. This board's own data lives under the icu/ path so it doesn't
+// collide with the Charge Board's cb2/ path in the same database.
+const firebaseConfig = {
+apiKey: "AIzaSyC3GFPEr1SoIw-Vq7RnEjoCKJeR0lPzyac",
+databaseURL: "https://charge-nurse-default-rtdb.firebaseio.com"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const PATIENTS_PATH = 'icu/patients';
+const IMPORTED_PATH = 'icu/importedChargeIds';
+// Charge Board's discharge log now lives in this SAME database/project —
+// no more cross-project fetch() needed at all.
+const CHARGE_LOG_PATH = 'cb2/log';
+
+let editMode = false;
+let currentId = null;
+let allPatients = {};
+
+// ── ANONYMOUS AUTH ─────────────────────────────────────────────────────────
+// Rules on this database require auth != null, same as the Charge Board.
+// Nothing below runs until sign-in actually resolves.
+firebase.auth().onAuthStateChanged(user => {
+if (user) {
+attachRealtimeListeners();
+}
+});
+firebase.auth().signInAnonymously().catch(err => {
+console.error('Anonymous sign-in failed:', err);
+});
+
+function attachRealtimeListeners(){
+// ── REALTIME LISTENER ────────────────────────────────────────────────────
+db.ref(PATIENTS_PATH).on('value', snap => {
+allPatients = snap.val() || {};
+renderAll(allPatients);
+});
+
+// ── CROSS-BOARD DEDUP ────────────────────────────────────────────────────
+// importedIds is persisted so it survives page reloads AND patient
+// discharge. Once an ID is in this set it is NEVER re-imported, regardless
+// of whether the patient is still in the board or not.
+db.ref(IMPORTED_PATH).once('value', snap => {
+importedIds = snap.val() || {};
+pollChargeDropoffs();
+setInterval(pollChargeDropoffs, 60000);
+});
+}
+
+let importedIds = {}; // { [chargeLogId]: true }
+
+async function pollChargeDropoffs() {
+try {
+const snap = await db.ref(CHARGE_LOG_PATH).once('value');
+const logData = snap.val();
+if (!logData) return;
+
+const toImport = [];
+Object.entries(logData).forEach(([id, entry]) => {
+const isTarget = entry.logType === 'dropoff' || entry.logType === 'surgery';
+if (!isTarget) return;
+if (importedIds[id]) return; // already imported — persisted, survives discharge
+toImport.push([id, entry]);
+});
+
+if (toImport.length === 0) return;
+
+for (const [id, entry] of toImport) {
+// Mark in memory first so concurrent polls in the same session
+// can't double-fire while the Firebase write is in flight.
+importedIds[id] = true;
+
+// Persist to Firebase and AWAIT it — this must complete before we
+// push the patient so that a page reload mid-import can't cause a
+// re-import. Fire-and-forget was the root cause of repeat population.
+try {
+await db.ref(`${IMPORTED_PATH}/${id}`).set(true);
+} catch(writeErr) {
+// If we can't persist the ID, skip this entry entirely this cycle.
+// Better to miss one import than to create duplicates.
+console.warn('Failed to persist importedChargeId, skipping:', id, writeErr);
+delete importedIds[id];
+continue;
+}
+
+const targetSection = entry.logType === 'surgery' ? 'surg' : 'drop';
+const p = {
+name: entry.name || 'Unknown',
+owner: entry.owner || '',
+weight: '',
+species: 'K9',
+location: entry.roomNum
+? (entry.roomNum.startsWith('FO') ? 'Front Office' : `Exam ${entry.roomNum}`)
+: '',
+dvmAm: entry.doctor || '',
+dvmPm: '',
+tech: entry.tech || '',
+reason: entry.reason || '',
+section: targetSection,
+status: 'CPR',
+rx: '',
+alert: '',
+chargeLogId: id,
+arrivedAt: entry.loggedAt || Date.now()
+};
+
+await db.ref(PATIENTS_PATH).push(p);
+}
+} catch(e) { console.warn('pollChargeDropoffs error:', e); }
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+function renderAll(data) {
+const bodies = {
+icu: document.getElementById('icu-body'),
+surg: document.getElementById('surg-body'),
+drop: document.getElementById('drop-body')
+};
+Object.values(bodies).forEach(b => b.innerHTML = '');
+
+if (!data || Object.keys(data).length === 0) {
+Object.values(bodies).forEach(b => {
+b.innerHTML = '<tr class="empty-row"><td colspan="10">No patients</td></tr>';
+});
+return;
+}
+
+// Sort: ICU/Surg by name, Drop by arrivedAt desc
+const entries = Object.entries(data);
+entries.sort((a, b) => {
+const [,pa] = a; const [,pb] = b;
+if (pa.section === 'drop' && pb.section === 'drop') return (pb.arrivedAt||0) - (pa.arrivedAt||0);
+return (pa.name||''). localeCompare(pb.name||'');
+});
+
+const counts = { icu: 0, surg: 0, drop: 0 };
+
+entries.forEach(([id, p]) => {
+const sec = p.section || 'icu';
+if (!bodies[sec]) return;
+counts[sec]++;
+
+const dvmStr = [p.dvmAm, p.dvmPm].filter(Boolean).join(' / ');
+const alertHTML = p.alert
+? `<div style="background:#fffbeb;border:1px solid #fde68a;padding:2px 4px;border-radius:3px;font-size:9px;">${esc(p.alert)}</div>`
+: '—';
+
+const tr = document.createElement('tr');
+tr.className = sec;
+tr.dataset.id = id;
+tr.dataset.section = sec;
+
+if (editMode) {
+tr.draggable = true;
+tr.style.cursor = 'grab';
+tr.onclick = () => editPatient(id, p);
+setupDragHandlers(tr);
+}
+
+tr.innerHTML = `
+<td>
+<div class="patient-name">${esc(p.name)}</div>
+<div class="patient-owner">${esc(p.owner||'')}${p.arrivedAt ? ' · '+ fmtTime(p.arrivedAt) : ''}</div>
+</td>
+<td>${esc(p.weight||'—')}</td>
+<td>${esc(p.species||'—')}</td>
+<td style="font-size:10px">${esc(p.location||'—')}</td>
+<td style="font-size:10px">${esc(dvmStr||'—')}</td>
+<td style="font-size:10px">${esc(p.tech||'—')}</td>
+<td style="font-size:10px">${esc(p.reason||'—')}</td>
+<td style="font-size:9px; color:#444">${esc(p.rx||'—')}</td>
+<td><span class="status-pill ${(p.status||'cpr').toLowerCase()}">${esc(p.status||'CPR')}</span></td>
+<td>${alertHTML}</td>
+`;
+bodies[sec].appendChild(tr);
+});
+
+// Empty state per section
+Object.entries(bodies).forEach(([sec, tbody]) => {
+if (counts[sec] === 0) {
+tbody.innerHTML = '<tr class="empty-row"><td colspan="10">No patients</td></tr>';
+}
+});
+
+if (editMode) setupDropZones();
+}
+
+// ── DRAG & DROP ───────────────────────────────────────────────────────────
+let dragId = null;
+
+function setupDragHandlers(tr) {
+tr.addEventListener('dragstart', e => {
+dragId = tr.dataset.id;
+tr.classList.add('dragging');
+e.dataTransfer.effectAllowed = 'move';
+});
+tr.addEventListener('dragend', () => {
+tr.classList.remove('dragging');
+document.querySelectorAll('.drop-zone').forEach(z => {
+z.classList.remove('drag-over', 'drag-over-surg', 'drag-over-drop');
+});
+});
+}
+
+function setupDropZones() {
+document.querySelectorAll('.drop-zone').forEach(zone => {
+zone.ondragover = e => {
+e.preventDefault();
+e.dataTransfer.dropEffect = 'move';
+const sec = zone.dataset.section;
+zone.classList.add('drag-over');
+if (sec === 'surg') zone.classList.add('drag-over-surg');
+if (sec === 'drop') zone.classList.add('drag-over-drop');
+};
+zone.ondragleave = () => {
+zone.classList.remove('drag-over', 'drag-over-surg', 'drag-over-drop');
+};
+zone.ondrop = e => {
+e.preventDefault();
+zone.classList.remove('drag-over', 'drag-over-surg', 'drag-over-drop');
+const targetSection = zone.dataset.section;
+if (dragId && allPatients[dragId] && allPatients[dragId].section !== targetSection) {
+db.ref(PATIENTS_PATH + '/' + dragId + '/section').set(targetSection);
+}
+dragId = null;
+};
+});
+}
+
+// ── SAVE / EDIT / DELETE ──────────────────────────────────────────────────
+function savePatient() {
+const p = {
+name: document.getElementById('f-name').value.trim(),
+owner: document.getElementById('f-owner').value.trim(),
+weight: document.getElementById('f-weight').value.trim(),
+species: document.getElementById('f-species').value,
+location: document.getElementById('f-location').value.trim(),
+dvmAm: document.getElementById('f-dvm-am').value.trim(),
+dvmPm: document.getElementById('f-dvm-pm').value.trim(),
+tech: document.getElementById('f-tech').value.trim(),
+reason: document.getElementById('f-reason').value.trim(),
+section: document.getElementById('f-section').value,
+status: document.getElementById('f-status').value,
+rx: document.getElementById('f-rx').value.trim(),
+alert: document.getElementById('f-alert').value.trim(),
+};
+if (!p.name) return;
+
+if (currentId) {
+const existing = allPatients[currentId] || {};
+p.chargeLogId = existing.chargeLogId || null;
+p.arrivedAt = existing.arrivedAt || Date.now();
+db.ref(PATIENTS_PATH + '/' + currentId).set(p);
+} else {
+p.arrivedAt = Date.now();
+db.ref(PATIENTS_PATH).push(p);
+}
+closeModal();
+}
+
+function deletePatient() {
+if (confirm('Discharge and remove this patient?')) {
+db.ref(PATIENTS_PATH + '/' + currentId).remove();
+closeModal();
+}
+}
+
+function editPatient(id, p) {
+currentId = id;
+document.getElementById('f-name').value = p.name || '';
+document.getElementById('f-owner').value = p.owner || '';
+document.getElementById('f-weight').value = p.weight || '';
+document.getElementById('f-species').value = p.species || 'K9';
+document.getElementById('f-location').value = p.location || '';
+document.getElementById('f-dvm-am').value = p.dvmAm || '';
+document.getElementById('f-dvm-pm').value = p.dvmPm || '';
+document.getElementById('f-tech').value = p.tech || '';
+document.getElementById('f-reason').value = p.reason || '';
+document.getElementById('f-section').value = p.section || 'icu';
+document.getElementById('f-status').value = p.status || 'CPR';
+document.getElementById('f-rx').value = p.rx || '';
+document.getElementById('f-alert').value = p.alert || '';
+document.getElementById('delBtn').style.display = 'inline-block';
+document.getElementById('modalTitle').textContent = 'Edit Patient';
+openModal();
+}
+
+// ── UI HELPERS ────────────────────────────────────────────────────────────
+function toggleEditMode() {
+editMode = !editMode;
+document.getElementById('edit
