@@ -45,19 +45,19 @@ padding: 2px 6px; text-align: left; font-weight: 600; letter-spacing: 0.4px;
 .board-table tr { background: var(--surface); box-shadow: var(--shadow); transition: background 0.15s; }
 .board-table td { padding: 4px 6px; font-size: 11px; vertical-align: middle; line-height: 1.15; }
 /* Section accent bars */
-.icu td:first-child { border-left: 4px solid var(--icu-accent); border-radius: 4px 0 0 4px; }
-.surg td:first-child { border-left: 4px solid var(--surg-accent); border-radius: 4px 0 0 4px; }
-.drop td:first-child { border-left: 4px solid var(--drop-accent); border-radius: 4px 0 0 4px; }
+.icu td:first-child { border-left: 4px solid var(--icu-accent); border-radius: 0px 0 0 4px; }
+.surg td:first-child { border-left: 4px solid var(--surg-accent); border-radius: 0px 0 0 4px; }
+.drop td:first-child { border-left: 4px solid var(--drop-accent); border-radius: 0px 0 0 4px; }
 .patient-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px; }
 .patient-owner { font-size: 8px; color: var(--muted); text-transform: uppercase; }
-.status-pill { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; display: inline-block; }
+.status-pill { padding: 2px 6px; border-radius: 0px; font-size: 9px; font-weight: 700; text-transform: uppercase; display: inline-block; }
 .cpr { background: #f0fdf4; color: var(--cpr); border: 1px solid #bbf7d0; }
 .dnr { background: #fef2f2; color: var(--dnr); border: 1px solid #fecaca; }
 /* ── DRAG & DROP ── */
 .board-table tr[draggable="true"] { cursor: grab; }
 .board-table tr[draggable="true"]:active { cursor: grabbing; }
 .board-table tr.dragging { opacity: 0.4; }
-tbody.drag-over { outline: 2px dashed var(--icu-accent); outline-offset: -2px; background: #eff6ff; border-radius: 4px; }
+tbody.drag-over { outline: 2px dashed var(--icu-accent); outline-offset: -2px; background: #eff6ff; border-radius: 0px; }
 tbody.drag-over-surg { outline-color: var(--surg-accent); background: #f5f3ff; }
 tbody.drag-over-drop { outline-color: var(--drop-accent); background: #ecfeff; }
 /* ── EMPTY STATE ── */
@@ -65,16 +65,16 @@ tbody.drag-over-drop { outline-color: var(--drop-accent); background: #ecfeff; }
 /* ── MODAL ── */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(3px); display: none; align-items: center; justify-content: center; z-index: 1000; }
 .modal-overlay.open { display: flex; }
-.modal { background: white; padding: 20px; border-radius: 10px; width: 580px; max-width: 95vw; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+.modal { background: white; padding: 20px; border-radius: 0px; width: 580px; max-width: 95vw; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
 .modal h2 { font-family: 'Syne', sans-serif; margin-bottom: 14px; font-size: 16px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .form-group { display: flex; flex-direction: column; gap: 3px; }
 .form-group label { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.3px; }
-input, select, textarea { padding: 7px 9px; border: 1px solid var(--border); border-radius: 5px; font-size: 12px; width: 100%; font-family: 'DM Mono', monospace; color: var(--text); }
+input, select, textarea { padding: 7px 9px; border: 1px solid var(--border); border-radius: 0px; font-size: 12px; width: 100%; font-family: 'DM Mono', monospace; color: var(--text); }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--icu-accent); }
-.edit-toggle { cursor: pointer; font-size: 10px; border: 1px solid var(--border); padding: 5px 12px; border-radius: 4px; background: white; font-family: 'DM Mono', monospace; transition: all 0.15s; }
+.edit-toggle { cursor: pointer; font-size: 10px; border: 1px solid var(--border); padding: 5px 12px; border-radius: 0px; background: white; font-family: 'DM Mono', monospace; transition: all 0.15s; }
 .edit-toggle.active { background: var(--icu-accent); color: white; border-color: var(--icu-accent); }
-#addBtn { display: none; margin: 10px 0 4px; padding: 7px 14px; background: var(--icu-accent); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-family: 'DM Mono', monospace; }
+#addBtn { display: none; margin: 10px 0 4px; padding: 7px 14px; background: var(--icu-accent); color: white; border: none; border-radius: 0px; cursor: pointer; font-size: 12px; font-family: 'DM Mono', monospace; }
 </style>
 </head>
 <body>
@@ -163,8 +163,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--i
 <div style="margin-top:14px; display:flex; justify-content:space-between; align-items:center;">
 <button onclick="closeModal()" style="border:none; background:none; cursor:pointer; color:var(--muted); font-size:13px;">Cancel</button>
 <div style="display:flex; gap:8px;">
-<button id="delBtn" style="display:none; background:#fee2e2; color:#991b1b; padding:7px 14px; border-radius:5px; border:none; cursor:pointer; font-size:12px;" onclick="deletePatient()">Discharge</button>
-<button style="background:var(--icu-accent); color:white; padding:7px 16px; border-radius:5px; border:none; cursor:pointer; font-size:12px;" onclick="savePatient()">Save</button>
+<button id="delBtn" style="display:none; background:#fee2e2; color:#991b1b; padding:7px 14px; border-radius:0px; border:none; cursor:pointer; font-size:12px;" onclick="deletePatient()">Discharge</button>
+<button style="background:var(--icu-accent); color:white; padding:7px 16px; border-radius:0px; border:none; cursor:pointer; font-size:12px;" onclick="savePatient()">Save</button>
 </div>
 </div>
 </div>
@@ -320,7 +320,7 @@ counts[sec]++;
 
 const dvmStr = [p.dvmAm, p.dvmPm].filter(Boolean).join(' / ');
 const alertHTML = p.alert
-? `<div style="background:#fffbeb;border:1px solid #fde68a;padding:2px 4px;border-radius:3px;font-size:9px;">${esc(p.alert)}</div>`
+? `<div style="background:#fffbeb;border:1px solid #fde68a;padding:2px 4px;border-radius:0px;font-size:9px;">${esc(p.alert)}</div>`
 : '—';
 
 const tr = document.createElement('tr');
